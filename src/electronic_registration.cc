@@ -2,8 +2,10 @@
 
 #include "game_config.h"
 
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#endif
 
 // 0x440DD0
 void runElectronicRegistration()
@@ -11,6 +13,8 @@ void runElectronicRegistration()
     int timesRun = 0;
     configGetInt(&gGameConfig, GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_TIMES_RUN_KEY, &timesRun);
     if (timesRun > 0 && timesRun < 5) {
+
+#ifdef _WIN32
         char path[MAX_PATH];
         if (GetModuleFileNameA(NULL, path, sizeof(path)) != 0) {
             char* pch = strrchr(path, '\\');
@@ -32,6 +36,7 @@ void runElectronicRegistration()
                 WaitForSingleObject(processInfo.hProcess, INFINITE);
             }
         }
+#endif // _WIN32
 
         configSetInt(&gGameConfig, GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_TIMES_RUN_KEY, timesRun + 1);
     } else {

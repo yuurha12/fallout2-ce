@@ -165,6 +165,7 @@ const char* soundGetErrorDescription(int err)
 // 0x4AC7B0
 void _refreshSoundBuffers(Sound* sound)
 {
+#ifdef _WIN32
     if (sound->field_3C & 0x80) {
         return;
     }
@@ -337,6 +338,7 @@ void _refreshSoundBuffers(Sound* sound)
     IDirectSoundBuffer_Unlock(sound->directSoundBuffer, audioPtr1, audioBytes1, audioPtr2, audioBytes2);
 
     sound->field_70 = v6;
+#endif
 
     return;
 }
@@ -344,6 +346,9 @@ void _refreshSoundBuffers(Sound* sound)
 // 0x4ACC58
 int soundInit(int a1, int a2, int a3, int a4, int rate)
 {
+#ifndef _WIN32
+    goto out;
+#else
     HRESULT hr;
     DWORD v24;
 
@@ -467,6 +472,7 @@ int soundInit(int a1, int a2, int a3, int a4, int rate)
     if (dscaps.dwFlags & DSCAPS_EMULDRIVER) {
         debugPrint("soundInit: using DirectSound emulated drivers\n");
     }
+#endif // _WIN32
 
 out:
 
@@ -495,6 +501,7 @@ void soundExit()
         _fadeFreeList = next;
     }
 
+#ifdef _WIN32
     if (gDirectSoundPrimaryBuffer != NULL) {
         IDirectSoundBuffer_Release(gDirectSoundPrimaryBuffer);
         gDirectSoundPrimaryBuffer = NULL;
@@ -504,7 +511,7 @@ void soundExit()
         IDirectSound_Release(gDirectSound);
         gDirectSound = NULL;
     }
-
+#endif // _WIN32
     gSoundLastError = SOUND_NO_ERROR;
     gSoundInitialized = false;
 }
@@ -679,6 +686,7 @@ int soundLoad(Sound* sound, char* filePath)
 // 0x4AD504
 int _soundRewind(Sound* sound)
 {
+#ifdef _WIN32
     HRESULT hr;
 
     if (!gSoundInitialized) {
@@ -709,6 +717,7 @@ int _soundRewind(Sound* sound)
     }
 
     sound->field_40 &= ~(0x01);
+#endif
 
     gSoundLastError = SOUND_NO_ERROR;
     return gSoundLastError;
@@ -717,6 +726,7 @@ int _soundRewind(Sound* sound)
 // 0x4AD5C8
 int _addSoundData(Sound* sound, unsigned char* buf, int size)
 {
+#ifdef _WIN32
     HRESULT hr;
     void* audio_ptr_1;
     DWORD audio_bytes_1;
@@ -745,6 +755,7 @@ int _addSoundData(Sound* sound, unsigned char* buf, int size)
         gSoundLastError = SOUND_UNKNOWN_ERROR;
         return gSoundLastError;
     }
+#endif
 
     gSoundLastError = SOUND_NO_ERROR;
     return gSoundLastError;
@@ -778,6 +789,7 @@ int _soundSetData(Sound* sound, unsigned char* buf, int size)
 // 0x4AD73C
 int soundPlay(Sound* sound)
 {
+#ifdef _WIN32
     HRESULT hr;
     DWORD readPos;
     DWORD writePos;
@@ -812,6 +824,7 @@ int soundPlay(Sound* sound)
     sound->field_40 |= SOUND_FLAG_SOUND_IS_PLAYING;
 
     ++_numSounds;
+#endif
 
     gSoundLastError = SOUND_NO_ERROR;
     return gSoundLastError;
@@ -820,6 +833,7 @@ int soundPlay(Sound* sound)
 // 0x4AD828
 int soundStop(Sound* sound)
 {
+#ifdef WIN32
     HRESULT hr;
 
     if (!gSoundInitialized) {
@@ -845,6 +859,7 @@ int soundStop(Sound* sound)
 
     sound->field_40 &= ~SOUND_FLAG_SOUND_IS_PLAYING;
     _numSounds--;
+#endif // _WIN32
 
     gSoundLastError = SOUND_NO_ERROR;
     return gSoundLastError;
@@ -877,6 +892,7 @@ int soundDelete(Sound* sample)
 // 0x4AD948
 int soundContinue(Sound* sound)
 {
+#ifdef _WIN32
     HRESULT hr;
     DWORD status;
 
@@ -938,6 +954,7 @@ int soundContinue(Sound* sound)
             sound->field_40 &= ~(0x03);
         }
     }
+#endif // _WIN32
 
     gSoundLastError = SOUND_NO_ERROR;
     return gSoundLastError;
@@ -1082,6 +1099,7 @@ int _soundVolumeHMItoDirectSound(int volume)
 // 0x4ADE0C
 int soundSetVolume(Sound* sound, int volume)
 {
+#ifdef _WIN32
     int normalizedVolume;
     HRESULT hr;
 
@@ -1109,6 +1127,7 @@ int soundSetVolume(Sound* sound, int volume)
         gSoundLastError = SOUND_UNKNOWN_ERROR;
         return gSoundLastError;
     }
+#endif
 
     gSoundLastError = SOUND_NO_ERROR;
     return gSoundLastError;
@@ -1222,6 +1241,7 @@ int soundSetReadLimit(Sound* sound, int readLimit)
 // 0x4AE0E4
 int soundPause(Sound* sound)
 {
+#ifdef _WIN32
     HRESULT hr;
     DWORD readPos;
     DWORD writePos;
@@ -1259,6 +1279,7 @@ int soundPause(Sound* sound)
 
     sound->field_48 = readPos;
     sound->field_40 |= SOUND_FLAG_SOUND_IS_PAUSED;
+#endif // _WIN32
 
     return soundStop(sound);
 }
@@ -1268,6 +1289,7 @@ int soundPause(Sound* sound)
 // 0x4AE1F0
 int soundResume(Sound* sound)
 {
+#ifdef _WIN32
     HRESULT hr;
 
     if (!gSoundInitialized) {
@@ -1298,6 +1320,7 @@ int soundResume(Sound* sound)
 
     sound->field_40 &= ~SOUND_FLAG_SOUND_IS_PAUSED;
     sound->field_48 = 0;
+#endif;
 
     return soundPlay(sound);
 }
@@ -1445,7 +1468,9 @@ void CALLBACK _doTimerEvent(UINT uTimerID, UINT uMsg, DWORD_PTR dwUser, DWORD_PT
 void _removeTimedEvent(unsigned int* timerId)
 {
     if (*timerId != -1) {
+#ifdef _WIN32
         timeKillEvent(*timerId);
+#endif
         *timerId = -1;
     }
 }
@@ -1572,6 +1597,7 @@ void _removeFadeSound(STRUCT_51D478* a1)
 // 0x4AE8B0
 void _fadeSounds()
 {
+#ifdef _WIN32
     STRUCT_51D478* ptr;
 
     ptr = _fadeHead;
@@ -1607,11 +1633,13 @@ void _fadeSounds()
         timeKillEvent(_fadeEventHandle);
         _fadeEventHandle = -1;
     }
+#endif // _WIN32
 }
 
 // 0x4AE988
 int _internalSoundFade(Sound* sound, int a2, int a3, int a4)
 {
+#ifdef _WIN32
     STRUCT_51D478* ptr;
 
     if (!_deviceInit) {
@@ -1697,6 +1725,7 @@ int _internalSoundFade(Sound* sound, int a2, int a3, int a4)
         gSoundLastError = SOUND_UNKNOWN_ERROR;
         return gSoundLastError;
     }
+#endif // _WIN32
 
     gSoundLastError = SOUND_NO_ERROR;
     return gSoundLastError;

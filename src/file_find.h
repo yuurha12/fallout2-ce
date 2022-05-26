@@ -3,8 +3,10 @@
 
 #include <stdbool.h>
 
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#endif
 
 // NOTE: This structure is significantly different from what was in the
 // original code. Watcom provides opendir/readdir/closedir implementations,
@@ -29,7 +31,7 @@ typedef struct DirectoryFileFindData {
 #if defined(_MSC_VER)
     HANDLE hFind;
     WIN32_FIND_DATAA ffd;
-#elif defined(__WATCOMC__)
+#elif defined(__WATCOMC__) || defined(__linux__)
     DIR* dir;
     struct dirent* entry;
 #else

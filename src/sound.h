@@ -72,8 +72,15 @@ typedef void SoundCallback(void* userData, int a2);
 typedef struct Sound {
     SoundFileIO io;
     unsigned char* field_20;
+
+#ifdef _WIN32
     LPDIRECTSOUNDBUFFER directSoundBuffer;
     DSBUFFERDESC directSoundBufferDescription;
+#else
+    int directSoundBuffer;
+    int directSoundBufferDescription;
+#endif // _WIN32
+
     int field_3C;
     // flags
     int field_40;
@@ -91,7 +98,7 @@ typedef struct Sound {
     int field_68;
     int readLimit;
     int field_70;
-    DWORD field_74;
+    unsigned long field_74;
     int field_78;
     int field_7C;
     int field_80;

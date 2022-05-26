@@ -8,8 +8,12 @@
 
 #include <stdbool.h>
 
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#else
+#define MAX_PATH (PATH_MAX)
+#endif
 
 #define LOAD_SAVE_DESCRIPTION_LENGTH (30)
 #define LOAD_SAVE_HANDLER_COUNT (27)

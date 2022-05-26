@@ -7,8 +7,10 @@
 #include <stdio.h>
 #include <zlib.h>
 
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#endif
 
 // 0x452740
 int fileCopyDecompressed(const char* existingFilePath, const char* newFilePath)
@@ -137,7 +139,33 @@ int _gzdecompress_file(const char* existingFilePath, const char* newFilePath)
         gzclose(gzstream);
         fclose(stream);
     } else {
+#ifdef _WIN32
         CopyFileA(existingFilePath, newFilePath, FALSE);
+#else
+        FILE *fptr1, *fptr2;
+
+        // Source file
+        fptr1 = fopen(existingFilePath, "r");
+        if (fptr1 == NULL) {
+            return -1;
+        }
+
+        // Target file
+        fptr2 = fopen(newFilePath, "w");
+        if (fptr2 == NULL) {
+            return -1;
+        }
+
+        // Read contents from file
+        char c = fgetc(fptr1);
+        while (c != EOF) {
+            fputc(c, fptr2);
+            c = fgetc(fptr1);
+        }
+
+        fclose(fptr1);
+        fclose(fptr2);
+#endif // _WIN32
     }
 
     return 0;

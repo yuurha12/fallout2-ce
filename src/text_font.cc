@@ -7,8 +7,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#else
+#define MAX_PATH (PATH_MAX)
+#endif
 
 // 0x4D5530
 FontManager gTextFontManager = {

@@ -6,9 +6,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-
 #define MAX_WINDOW_COUNT (50)
 
 // The maximum number of radio groups.
@@ -155,8 +152,6 @@ typedef void(VideoSystemExitProc)();
 
 extern char _path_patches[];
 
-extern bool _GNW95_already_running;
-extern HANDLE _GNW95_title_mutex;
 extern bool gWindowSystemInitialized;
 extern int _GNW_wcolor[6];
 extern unsigned char* _screen_buffer;

@@ -9,8 +9,12 @@
 #include "skill_defs.h"
 #include "stat_defs.h"
 
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#else
+#define MAX_PATH (PATH_MAX)
+#endif
 
 typedef enum ItemDataMember {
     ITEM_DATA_MEMBER_PID = 0,

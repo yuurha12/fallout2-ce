@@ -7,9 +7,20 @@
 #include <stdlib.h>
 
 // clang-format off
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <timeapi.h>
+#else
+#include <sys/time.h>
+
+unsigned int timeGetTime()
+{
+    struct timeval now;
+    gettimeofday(&now, NULL);
+    return now.tv_usec/1000;
+}
+#endif
 // clang-format on
 
 // 0x50D4BA

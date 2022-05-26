@@ -8,7 +8,7 @@ bool fileFindFirst(const char* path, DirectoryFileFindData* findData)
     if (findData->hFind == INVALID_HANDLE_VALUE) {
         return false;
     }
-#elif defined(__WATCOMC__)
+#elif defined(__WATCOMC__) || defined(__linux__)
     findData->dir = opendir(path);
     if (findData->dir == NULL) {
         return false;
@@ -33,7 +33,7 @@ bool fileFindNext(DirectoryFileFindData* findData)
     if (!FindNextFileA(findData->hFind, &(findData->ffd))) {
         return false;
     }
-#elif defined(__WATCOMC__)
+#elif defined(__WATCOMC__) || defined(__linux__)
     findData->entry = readdir(findData->dir);
     if (findData->entry == NULL) {
         closedir(findData->dir);
@@ -51,7 +51,7 @@ bool findFindClose(DirectoryFileFindData* findData)
 {
 #if defined(_MSC_VER)
     FindClose(findData->hFind);
-#elif defined(__WATCOMC__)
+#elif defined(__WATCOMC__) || defined(__linux__)
     if (closedir(findData->dir) != 0) {
         return false;
     }

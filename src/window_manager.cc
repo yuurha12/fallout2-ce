@@ -19,12 +19,6 @@ static_assert(sizeof(Button) == 124, "wrong size");
 // 0x50FA30
 char _path_patches[] = "";
 
-// 0x51E3D8
-bool _GNW95_already_running = false;
-
-// 0x51E3DC
-HANDLE _GNW95_title_mutex = INVALID_HANDLE_VALUE;
-
 // 0x51E3E0
 bool gWindowSystemInitialized = false;
 
@@ -83,17 +77,6 @@ RadioGroup gRadioGroups[RADIO_GROUP_LIST_CAPACITY];
 // 0x4D5C30
 int windowManagerInit(VideoSystemInitProc* videoSystemInitProc, VideoSystemExitProc* videoSystemExitProc, int a3)
 {
-    CloseHandle(_GNW95_mutex);
-    _GNW95_mutex = INVALID_HANDLE_VALUE;
-
-    if (_GNW95_already_running) {
-        return WINDOW_MANAGER_ERR_ALREADY_RUNNING;
-    }
-
-    if (_GNW95_title_mutex == INVALID_HANDLE_VALUE) {
-        return WINDOW_MANAGER_ERR_TITLE_NOT_SET;
-    }
-
     if (gWindowSystemInitialized) {
         return WINDOW_MANAGER_ERR_WINDOW_SYSTEM_ALREADY_INITIALIZED;
     }
@@ -261,8 +244,6 @@ void windowManagerExit(void)
 
             gWindowSystemInitialized = false;
 
-            CloseHandle(_GNW95_title_mutex);
-            _GNW95_title_mutex = INVALID_HANDLE_VALUE;
         }
         _insideWinExit = false;
     }
@@ -1231,14 +1212,6 @@ void programWindowSetTitle(const char* title)
 {
     if (title == NULL) {
         return;
-    }
-
-    if (_GNW95_title_mutex == INVALID_HANDLE_VALUE) {
-        _GNW95_title_mutex = CreateMutexA(NULL, TRUE, title);
-        if (GetLastError() != ERROR_SUCCESS) {
-            _GNW95_already_running = true;
-            return;
-        }
     }
 
     strncpy(gProgramWindowTitle, title, 256);
