@@ -20,7 +20,7 @@ defaults:
 
 jobs:
 
- Build:
+ build-windows:
   runs-on: windows-latest
   steps:
 
@@ -40,3 +40,19 @@ jobs:
      path: |
       Build/*/fallout2-ce.exe
      retention-days: 7
+
+ build-linux32:
+  runs-on: ubuntu-22.04
+  steps:
+
+  - name: Clone
+    uses: actions/checkout@v2
+
+  - name: Install dependencies
+    run: sudo apt-get install g++-multilib libsdl2-dev:i386 
+
+  - name: Prepare
+    run: cmake -DCMAKE_C_FLAGS="-m32" -DCMAKE_CXX_FLAGS="-m32" -B build
+
+  - name: Release build
+    run: cmake --build build --config Release
