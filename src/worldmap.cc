@@ -2387,151 +2387,121 @@ static int wmAreaInit()
     int num;
     char* str;
     CityInfo* cities;
-    CityInfo* city;
-    EntranceInfo* entrance;
 
-    if (wmMapInit() == -1) {
+    // Initialize the map and configuration.
+    if (wmMapInit() == -1 || !configInit(&cfg)) {
         return -1;
     }
 
-    if (!configInit(&cfg)) {
+    // Read city configuration.
+    if (!configRead(&cfg, "data\\city.txt", true)) {
+        showMesageBox("\nwmAreaInit::Could not read city configuration file!");
         return -1;
     }
 
-    if (configRead(&cfg, "data\\city.txt", true)) {
-        area_idx = 0;
-        do {
-            snprintf(section, sizeof(section), "Area %02d", area_idx);
-            if (!configGetInt(&cfg, section, "townmap_art_idx", &num)) {
-                break;
+    area_idx = 0;
+    wmMaxAreaNum = 0; // Initialize area counter.
+    
+    while (1) {
+        snprintf(section, sizeof(section), "Area %02d", area_idx);
+        
+        // Attempt to read townmap_art_idx; if it fails, exit.
+        if (!configGetInt(&cfg, section, "townmap_art_idx", &num)) {
+            break; // No more areas.
+        }
+
+        wmMaxAreaNum++;
+
+        // Dynamic array realloc.
+        CityInfo* newCities = (CityInfo*)internal_realloc(wmAreaInfoList, sizeof(CityInfo) * wmMaxAreaNum);
+        if (newCities == nullptr) {
+            showMesageBox("\nwmAreaInit::Error reallocating memory for areas!");
+            exit(1);
+        }
+
+        wmAreaInfoList = newCities;
+        CityInfo* city = &(wmAreaInfoList[wmMaxAreaNum - 1]);
+
+        // Initialize city entry.
+        wmAreaSlotInit(city);
+        city->areaId = area_idx;
+        city->mapFid = (num != -1) ? buildFid(OBJ_TYPE_INTERFACE, num, 0, 0, 0) : -1;
+        
+        // Get label FID if available.
+        if (configGetInt(&cfg, section, "townmap_label_art_idx", &num)) {
+            city->labelFid = (num != -1) ? buildFid(OBJ_TYPE_INTERFACE, num, 0, 0, 0) : -1;
+        }
+        
+        // Read area name.
+        if (!configGetString(&cfg, section, "area_name", &str)) {
+            showMesageBox("\nwmAreaInit::Error loading area name!");
+            exit(1);
+        }
+        strncpy(city->name, str, 40);
+
+        // Read coordinates.
+        if (!configGetString(&cfg, section, "world_pos", &str) || 
+            strParseInt(&str, &(city->x)) == -1 || 
+            strParseInt(&str, &(city->y)) == -1) {
+            showMesageBox("\nwmAreaInit::Error loading coordinates!");
+            exit(1);
+        }
+
+        // Parse start state.
+        if (!configGetString(&cfg, section, "start_state", &str) || 
+            strParseStrFromList(&str, &(city->state), wmStateStrs, 2) == -1) {
+            showMesageBox("\nwmAreaInit::Error loading start state!");
+            exit(1);
+        }
+
+        // Obtain lock state if present.
+        if (configGetString(&cfg, section, "lock_state", &str)) {
+            if (strParseStrFromList(&str, &(city->lockState), wmStateStrs, 2) == -1) {
+                return -1;
+            }
+        }
+
+        // Size of city.
+        if (!configGetString(&cfg, section, "size", &str) || 
+            strParseStrFromList(&str, &(city->size), wmAreaSizeStrs, 3) == -1) {
+            showMesageBox("\nwmAreaInit::Error loading size!");
+            exit(1);
+        }
+
+        // Load entrances.
+        city->entrancesLength = 0;
+        while (city->entrancesLength < ENTRANCE_LIST_CAPACITY) {
+            snprintf(key, sizeof(key), "entrance_%d", city->entrancesLength);
+            if (!configGetString(&cfg, section, key, &str)) {
+                break; // No more entrances.
             }
 
-            wmMaxAreaNum++;
+            EntranceInfo* entrance = &(city->entrances[city->entrancesLength]);
+            wmEntranceSlotInit(entrance);
 
-            cities = (CityInfo*)internal_realloc(wmAreaInfoList, sizeof(CityInfo) * wmMaxAreaNum);
-            if (cities == nullptr) {
-                showMesageBox("\nwmConfigInit::Error loading areas!");
-                exit(1);
-            }
-
-            wmAreaInfoList = cities;
-
-            city = &(cities[wmMaxAreaNum - 1]);
-
-            // NOTE: Uninline.
-            wmAreaSlotInit(city);
-
-            city->areaId = area_idx;
-
-            if (num != -1) {
-                num = buildFid(OBJ_TYPE_INTERFACE, num, 0, 0, 0);
-            }
-
-            city->mapFid = num;
-
-            if (configGetInt(&cfg, section, "townmap_label_art_idx", &num)) {
-                if (num != -1) {
-                    num = buildFid(OBJ_TYPE_INTERFACE, num, 0, 0, 0);
-                }
-
-                city->labelFid = num;
-            }
-
-            if (!configGetString(&cfg, section, "area_name", &str)) {
-                showMesageBox("\nwmConfigInit::Error loading areas!");
-                exit(1);
-            }
-
-            strncpy(city->name, str, 40);
-
-            if (!configGetString(&cfg, section, "world_pos", &str)) {
-                showMesageBox("\nwmConfigInit::Error loading areas!");
-                exit(1);
-            }
-
-            if (strParseInt(&str, &(city->x)) == -1) {
+            // Parse entrance data.
+            if (strParseStrFromList(&str, &(entrance->state), wmStateStrs, 2) == -1 ||
+                strParseInt(&str, &(entrance->x)) == -1 ||
+                strParseInt(&str, &(entrance->y)) == -1 ||
+                strParseStrFromFunc(&str, &(entrance->map), &wmParseFindMapIdxMatch) == -1 ||
+                strParseInt(&str, &(entrance->elevation)) == -1 ||
+                strParseInt(&str, &(entrance->tile)) == -1 ||
+                strParseInt(&str, &(entrance->rotation)) == -1) {
                 return -1;
             }
 
-            if (strParseInt(&str, &(city->y)) == -1) {
-                return -1;
-            }
+            city->entrancesLength++;
+        }
 
-            if (!configGetString(&cfg, section, "start_state", &str)) {
-                showMesageBox("\nwmConfigInit::Error loading areas!");
-                exit(1);
-            }
-
-            if (strParseStrFromList(&str, &(city->state), wmStateStrs, 2) == -1) {
-                return -1;
-            }
-
-            if (configGetString(&cfg, section, "lock_state", &str)) {
-                if (strParseStrFromList(&str, &(city->lockState), wmStateStrs, 2) == -1) {
-                    return -1;
-                }
-            }
-
-            if (!configGetString(&cfg, section, "size", &str)) {
-                showMesageBox("\nwmConfigInit::Error loading areas!");
-                exit(1);
-            }
-
-            if (strParseStrFromList(&str, &(city->size), wmAreaSizeStrs, 3) == -1) {
-                return -1;
-            }
-
-            while (city->entrancesLength < ENTRANCE_LIST_CAPACITY) {
-                snprintf(key, sizeof(key), "entrance_%d", city->entrancesLength);
-
-                if (!configGetString(&cfg, section, key, &str)) {
-                    break;
-                }
-
-                entrance = &(city->entrances[city->entrancesLength]);
-
-                // NOTE: Uninline.
-                wmEntranceSlotInit(entrance);
-
-                if (strParseStrFromList(&str, &(entrance->state), wmStateStrs, 2) == -1) {
-                    return -1;
-                }
-
-                if (strParseInt(&str, &(entrance->x)) == -1) {
-                    return -1;
-                }
-
-                if (strParseInt(&str, &(entrance->y)) == -1) {
-                    return -1;
-                }
-
-                if (strParseStrFromFunc(&str, &(entrance->map), &wmParseFindMapIdxMatch) == -1) {
-                    return -1;
-                }
-
-                if (strParseInt(&str, &(entrance->elevation)) == -1) {
-                    return -1;
-                }
-
-                if (strParseInt(&str, &(entrance->tile)) == -1) {
-                    return -1;
-                }
-
-                if (strParseInt(&str, &(entrance->rotation)) == -1) {
-                    return -1;
-                }
-
-                city->entrancesLength++;
-            }
-
-            area_idx++;
-        } while (area_idx < 5000);
+        area_idx++;
     }
 
+    // Cleanup configuration.
     configFree(&cfg);
 
+    // Check final area count against expected cities if necessary.
     if (wmMaxAreaNum != CITY_COUNT) {
-        showMesageBox("\nwmAreaInit::Error loading Cities!");
+        showMesageBox("\nwmAreaInit::Mismatch in loaded cities count!");
         exit(1);
     }
 
