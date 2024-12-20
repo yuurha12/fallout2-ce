@@ -2405,7 +2405,7 @@ static int wmAreaInit()
     while (1) {
         snprintf(section, sizeof(section), "Area %02d", area_idx);
         
-        // Read townmap_art_idx; if it fails, exit the loop.
+        // Attempt to read townmap_art_idx; if it fails, exit the loop.
         if (!configGetInt(&cfg, section, "townmap_art_idx", &num)) {
             break; // No more areas to read.
         }
@@ -2499,10 +2499,9 @@ static int wmAreaInit()
     // Cleanup configuration.
     configFree(&cfg);
 
-    // Debug output: Display the actual number of loaded areas.
-    printf("Total loaded cities: %d\n", wmMaxAreaNum);
+    // Removed check for wmMaxAreaNum != CITY_COUNT to not enforce a static limit.
+    // The function simply returns after loading the areas successfully.
 
-    // Removed count mismatch check.
     return 0;
 }
 
